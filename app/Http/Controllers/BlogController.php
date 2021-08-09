@@ -81,7 +81,8 @@ class BlogController extends Controller
      */
     public function edit($id)
     {
-        //
+        $blog = Blog::find($id);
+        return view('blogs.edit',compact('blog'));
     }
 
     /**
@@ -91,10 +92,47 @@ class BlogController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        //
+    public function update(Request $request, Blog $blog)
+{
+    $this->validate($request, [
+        'title'     => 'required',
+        'content'   => 'required'
+    ]);
+
+    //get data Blog by ID
+    $blog = Blog::findOrFail($blog->id);
+
+    if($request->file('image') == "") {
+        $blog->update([
+            'title'     => $request->title,
+            'content'   => $request->content
+        ]);
+
+    } else {
+
+        //hapus old image
+        Storage::disk('local')->delete('public/blogs/'.$blog->image);
+
+        //upload new image
+        $image = $request->file('image');
+        $image->storeAs('public/blogs', $image->hashName());
+
+        $blog->update([
+            'image'     => $image->hashName(),
+            'title'     => $request->title,
+            'content'   => $request->content
+        ]);
+
     }
+
+    if($blog){
+        //redirect dengan pesan sukses
+        return redirect()->route('blogs.index')->with(['success' => 'Data Berhasil Diupdate!']);
+    }else{
+        //redirect dengan pesan error
+        return redirect()->route('blogs.index')->with(['error' => 'Data Gagal Diupdate!']);
+    }
+}
 
     /**
      * Remove the specified resource from storage.
@@ -104,6 +142,16 @@ class BlogController extends Controller
      */
     public function destroy($id)
     {
-        //
+      $blog = Blog::findOrFail($id);
+      Storage::disk('local')->delete('public/blogs/'.$blog->image);
+      $blog->delete();
+    
+      if($blog){
+         //redirect dengan pesan sukses
+         return redirect()->route('blogs.index')->with(['success' => 'Data Berhasil Dihapus!']);
+      }else{
+        //redirect dengan pesan error
+        return redirect()->route('blogs.index')->with(['error' => 'Data Gagal Dihapus!']);
+      }
     }
 }
