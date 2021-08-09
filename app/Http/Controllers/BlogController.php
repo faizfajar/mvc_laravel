@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Blog;
+use Illuminate\Http\UploadedFile\Hasname;
 
 
 class BlogController extends Controller
@@ -28,7 +29,7 @@ class BlogController extends Controller
     public function create()
     {
         $blogs = Blog::all();
-        return view('blogs.add', compact('blogs'));
+        return view('blogs.create', compact('blogs'));
     }
 
     /**
@@ -39,7 +40,26 @@ class BlogController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $this->validate($request, [
+            'image'  => 'required|image|mimes:png,jpg,jpeg',
+            'title'  => 'required',
+            'content'=> 'required'
+        ]);
+
+        $image = $request->file('image');
+        $image->storeAs('public/blogs', $image->hashName());
+        
+        $blog = Blog::create([
+           'image'     => $image->hashName(),
+           'title'     => $request->title,
+           'content'   => $request->content
+        ]);
+        if($blog){
+            return redirect()->route('blogs.index')->with(['success' => 'Data Berhasil Disimpan']);
+        }else{
+            return redirect()->route('blogs.index')->with(['error' => 'Data Gaga, Disimpan']);
+
+        }
     }
 
     /**
